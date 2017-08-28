@@ -4,11 +4,30 @@ const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const _ = require("lodash");
 const express = require('express');
-
+const app = express();
+const path = require('path')
+var logger = require('morgan');
 var ExtractJwt = passportJwt.ExtractJwt;
 var JwtStrategy = passportJwt.Strategy;
 
+//Changing the dir to where angualr is
 
+app.use(express.static((__dirname, 'dist')));
+
+
+//Views
+app.set('view engine', 'ejs');
+app.engine('html', require('ejs').renderFile);
+
+
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
+//LOGGER
+
+app.use(logger('dev'));
+
+//Dummy users
 const users = [
   {
     id: '1',
@@ -16,6 +35,8 @@ const users = [
     password: 'luiz'
   }]
 
+
+//Starting of JWT Strategy
 let jwtOptions = {}
 jwtOptions.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
 jwtOptions.secretOrKey = 'testatesstando';
@@ -35,17 +56,15 @@ var strategy = new JwtStrategy(jwtOptions,(payload,next) =>
 
 passport.use(strategy);
 
-const app = express();
 
 app.use(passport.initialize());
-app.use(bodyParser.urlencoded({
-  extended:true
-}));
+
+
 
 // 1- To decide what is the beggining
 app.get('/',(req,res) =>
 {
-  res.json({test:'Working'})
+  res.render('index.html')
 });
 
 
@@ -78,6 +97,8 @@ app.post('/auth',(req,res)=>
 
 app.get('/auth',passport.authenticate('jwt',{session:false}),(req,res)=>
 {
+  console.log('working');
+  //Angular logic, if (null) logout, if (true) nothing happen
   res.json({value:true});
 })
 
