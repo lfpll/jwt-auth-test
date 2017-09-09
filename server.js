@@ -1,33 +1,44 @@
-const passportJwt = require('passport-jwt');
-const passport = require("passport");
 const bodyParser = require('body-parser');
-const jwt = require('jsonwebtoken');
+
 const _ = require("lodash");
 const express = require('express');
 const app = express();
 const path = require('path')
-var logger = require('morgan');
-var ExtractJwt = passportJwt.ExtractJwt;
-var JwtStrategy = passportJwt.Strategy;
+const logger = require('morgan');
+const user  = require('./routes/auth.js');
+const mongoose = require('mongoose');
 
-//Changing the dir to where angualr is
+// Adding the attributes for the user
 
-app.use(express.static((__dirname, 'dist')));
+app.use((req, res, next) =>{
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type,x-access-token');
+res.setHeader('Access-Control-Allow-Credentials', true);
+next();
+});
 
 
-//Views
+// ==== Views
 app.set('view engine', 'ejs');
 app.engine('html', require('ejs').renderFile);
 
 
+mongoose.connect('mongodb://localhost/data',{
+  useMongoClient: true,
+  /* other options */
+});
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-//LOGGER
+// >>>> Delete after full developing LOGGER
 
 app.use(logger('dev'));
 
-//Dummy users
+app.use('/auth/user',user);
+
+// >>>> Dummy users
 const users = [
   {
     id: '1',
@@ -36,71 +47,23 @@ const users = [
   }]
 
 
-//Starting of JWT Strategy
-let jwtOptions = {}
-jwtOptions.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
-jwtOptions.secretOrKey = 'testatesstando';
 
-//Defines the strategy used by jwt
-var strategy = new JwtStrategy(jwtOptions,(payload,next) =>
-{
-  const user = users[_.findIndex(users,{id:payload.id})];
 
-  if(user){
-    next(null,user)
-  }
-  else{
-    next(null,false)
-  }
+
+// Used to make router in Angular2 and Redirect to non existent pages
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist/index.html'));
 });
 
-passport.use(strategy);
+app.get("/verify",(req,res)=>{
 
-
-app.use(passport.initialize());
-
-
-
-// 1- To decide what is the beggining
-app.get('/',(req,res) =>
-{
-  res.render('index.html')
-});
-
+})
 
 // == LOGIN ROUTE ==
 // To implement
 // 1 - Encryption of the password
 // 2 - Connection to mongoose
 // 3 - Better error messages and Welcome messages
-
-app.post('/auth',(req,res)=>
-  {
-    console.log(req.body)
-    const user = users[_.findIndex(users, {name: req.body.name})]
-    if(!user)
-    {
-      res.json({message:"No user Found"})
-    }
-    else if(user.password === req.body.password)
-    {
-      //PayLoad to be Encrypted (?) - xxxx.yyyy.zzz Payload = xxxx
-      const payLoad = {id: user.id}
-      res.json({message:"Welcome" ,token:(jwt.sign(payLoad,jwtOptions.secretOrKey))});
-    }
-    else
-    {
-      res.json({message:"Wrong Password"})
-    }
-  }
-);
-
-app.get('/auth',passport.authenticate('jwt',{session:false}),(req,res)=>
-{
-  console.log('working');
-  //Angular logic, if (null) logout, if (true) nothing happen
-  res.json({value:true});
-})
 
 app.listen(3000,(req,res) =>
 {
