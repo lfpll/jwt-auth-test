@@ -1,8 +1,7 @@
 const mongoose = require('mongoose');
 const User     = require('../models/user');
 const express  = require('express')
-const router   = express();
-const bodyParser = require('body-parser');
+const router   = express.Router();
 const jwt = require('jsonwebtoken');
 
 
@@ -10,6 +9,7 @@ const jwt = require('jsonwebtoken');
 
 router.post('/login',(req,res)=>{
   const logUser = req.body
+
   User.findOne({email:logUser.email},(err,user)=>
   {
     //Apparently if I don'tu se return mongoose keeps running
@@ -33,7 +33,7 @@ router.post('/login',(req,res)=>{
     }
 
     //If it pass al the validations it send's a token with 24 hour as validation
-    res.send({success:true, message:'You are Logged In', token:jwt.sign(user,'yourSecret',{expiresIn:60*60*24})});
+    res.send({success:true, message:'You are Logged In', token:jwt.sign({user},'yourSecret',{expiresIn:60*60*24})});
   })
 })
 
@@ -41,6 +41,7 @@ router.post('/login',(req,res)=>{
 
 router.post('/register',(req,res) =>{
   let userData = req.body
+  console.log(userData);
   User.findOne({'email':userData.email},(err,user)=>
     {
       //Apparently if I don't use return mongoose keeps running
@@ -60,15 +61,11 @@ router.post('/register',(req,res) =>{
       newUser.save((err)=>
       {
         //Stop section if there is an error
-        if(err) {
-          throw err
-        }
+        if(err) throw err;
         else
         {
-          // If it's successfull it send's a token for the front End
-          const token = jwt.sign({
-            newUser
-          }, 'yoursecret', { expiresIn: 60 * 60 *24 });
+          // If it's successfull it send's a token for the Front End
+          const token = jwt.sign({newUser}, 'yoursecret', { expiresIn: 60 * 60 *24 });
           res.send({success:true,message:'User logged in', token:token})
         }
       });
