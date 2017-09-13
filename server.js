@@ -45,7 +45,7 @@ app.get("/verify",jwtVerify.verify,(req,res)=>{
 });
 
 
-// Used to make router in Angular2 and Redirect to non existent pages
+// Used to make router in Angular2 work and Redirect non existent pages
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist/index.html'));
 });
